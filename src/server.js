@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { lessons as seedLessons, quizQuestions } from './seed.js';
 import { courseCatalog } from './courses.js';
+import { freeCourseCatalog } from './freeCourses.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
@@ -51,6 +52,7 @@ async function getLessons() {
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'VetSphere API', database: databaseConnected ? 'connected' : 'demo-mode', accounts: databaseConnected }));
 app.get('/api/lessons', async (_req, res, next) => { try { res.json({ lessons: await getLessons(), source: databaseConnected ? 'mongodb' : 'seed-data' }); } catch (e) { next(e); } });
 app.get('/api/courses', (_req, res) => res.json({ courses: courseCatalog, source: 'course-catalog' }));
+app.get('/api/free-courses', (_req, res) => res.json({ courses: freeCourseCatalog, delivery: 'in-app-original-lessons', externalRedirects: false }));
 app.get('/api/courses/:slug', async (req, res, next) => { try { const course = courseCatalog.find(item => item.slug === req.params.slug); if (!course) return res.status(404).json({ error: 'Course not found.' }); const lessons = await getLessons(); res.json({ course: { ...course, lessons: course.lessonIds.map(id => lessons.find(lesson => lesson.id === id)).filter(Boolean) } }); } catch (e) { next(e); } });
 app.get('/api/lessons/:id', async (req, res, next) => { try { const lesson = (await getLessons()).find(item => item.id === req.params.id); if (!lesson) return res.status(404).json({ error: 'Lesson not found.' }); res.json({ lesson }); } catch (e) { next(e); } });
 app.get('/api/quiz', (_req, res) => res.json({ questions: quizQuestions.map(({ answerIndex, ...q }) => q), note: 'Correct answers are not included in the public question response.' }));
